@@ -38,3 +38,4 @@ See `figures/` for example charts.
 This repo is under active development.  
 What is coming soon: more advanced sentiment models for better accuracy, a prediction model, new webapp.
 
+Last updated: October 2025 
