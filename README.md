@@ -27,7 +27,10 @@ python src/hello.py
 
 ## EXAMPLE
 
-See `data/` for a sample transcript and the exported CSVs.  
+See `data/` for a sample transcript and the exported CSVs. 
+
+CSV files are stored in `data/` folder after each run.
+
 See `figures/` for example charts.
 
 ## NOTES
