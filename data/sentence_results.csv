@@ -1,0 +1,12 @@
+sentence,TextBlob_polarity,VADER_compound
+"Operator: Good afternoon, and welcome to Apple’s Third Quarter 2024 Earnings Conference Call.",0.5,0.7096
+Tim Cook: Thank you.,0.0,0.3612
+"Today, Apple is reporting revenue of $81.8 billion, down 1% from last year, but ahead of our expectations.",-0.07777777777777778,0.0
+"iPhone sales were strong, and we saw record revenue in Services.",0.43333333333333335,0.5106
+"Luca Maestri: Gross margin was 44.5 percent, a new record for a June quarter.",0.06818181818181818,-0.4767
+"Our cash flow remains strong, and we returned over $24 billion to shareholders.",0.43333333333333335,0.5106
+"Tim Cook: Looking ahead, we are very excited about our upcoming product launches, including the next generation of Apple Silicon.",0.24375000000000002,0.4005
+Operator: Thank you.,0.0,0.3612
+We will now take questions from analysts.,0.0,0.0
+Analyst: Could you discuss supply chain dynamics going into the next quarter?,0.0,0.2732
+"Tim Cook: While we expect some seasonal headwinds, we remain confident in our long-term growth strategy.",0.5,0.7003

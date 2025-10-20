@@ -1,0 +1,5 @@
+speaker,TextBlob_avg,VADER_avg
+Operator,0.25,0.5354
+Tim Cook,0.24791666666666667,0.4873333333333334
+Luca Maestri,0.06818181818181818,-0.4767
+Analyst,0.0,0.2732
