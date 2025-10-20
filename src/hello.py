@@ -211,7 +211,7 @@ def main():
         print(" - data/sentence_results.csv (all sentences)")
         print(" - data/speaker_summary.csv (average by speaker)")
     except Exception as e:
-        print(f"Error saving CSV files: {e}")
+        print(f"Error saving CSV files: {e}") # I will probably figure out a way to handle a missing speaker better here
 
         # Graph overview of sentiment (the trend across entirety of transcript)
     if not results_df.empty:
