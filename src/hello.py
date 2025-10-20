@@ -10,10 +10,9 @@ from datetime import datetime, timedelta
 
 
 def analyze_multiple_transcripts(folder_path):
-    """
-    Reads all .txt transcripts in the given folder and returns
-    average sentiment for each file.
-    """
+    
+    # Reads all .txt transcripts in the given folder and returns average sentiment for each file.
+   
     summary_data = []
 
     for filename in os.listdir(folder_path):
@@ -36,7 +35,7 @@ def analyze_multiple_transcripts(folder_path):
                 "VADER_avg": vader_avg
             })
 
-            # --- Optional: add stock change data if filename has a date ---
+            # adds the stock change data to the analysis if filename has a certain date already written in it
         try:
             if "q1" in filename.lower():
                 call_date = datetime(2024, 1, 25)
@@ -62,10 +61,9 @@ def analyze_multiple_transcripts(folder_path):
     return pd.DataFrame(summary_data)
 
 def analyze_stock_reaction(ticker="AAPL", call_date=None, days_after=5):
-    """
-    Fetches stock data around the earnings call date and calculates
-    the % change after the call.
-    """
+    
+    # Takes the stock data from around the time of earnings call date and calculates change (%) after the call was released
+    
     if call_date is None:
         print("No date provided for stock comparison.")
         return None
@@ -90,23 +88,19 @@ def analyze_stock_reaction(ticker="AAPL", call_date=None, days_after=5):
 
 
 
-# --- Step 1: Function to clean the transcript ---
+# Function to clean the transcript of superfluous elements
 def clean_transcript(text):
-    """
-    Removes unwanted elements from the transcript such as 'Applause', 
-    blank lines, and any extra whitespace.
-    """
+    #Removes unwanted elements from the transcript (Applause, blank lines, etc.)
+    
     text = re.sub(r'\(Applause\)', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\[.*?\]', '', text)  # remove bracketed text like [Laughter]
     text = re.sub(r'\s+', ' ', text)  # collapse multiple spaces
     return text.strip()
+  # I might add more cleaning steps later for things like timestamps
 
 
-# --- Step 2: Load the transcript file ---
+# retrieve transcript from a text file
 def load_transcript(file_path):
-    """
-    Loads the transcript from a text file.
-    """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             text = f.read()
@@ -117,9 +111,9 @@ def load_transcript(file_path):
         return None
 
 
-# --- Step 3: Main sentiment analysis logic ---
+# Main logic for the sentiment analysis 
 def main():
-    # Load and clean the transcript
+    # Load and clean transcript
     file_path = "data/sample_transcript"
     transcript = load_transcript(file_path)
     if not transcript:
@@ -127,20 +121,20 @@ def main():
 
     cleaned_text = clean_transcript(transcript)
 
-    # Split into sentences for TextBlob
+    # Split into single sentences
     blob = TextBlob(cleaned_text)
     sentences = blob.sentences
 
-    # Initialize VADER
+    # Initializing VADER
     analyzer = SentimentIntensityAnalyzer()
 
     print("\nSentiment Analysis Results:\n")
 
-    # Prepare containers for results
+    # Containers for results
     results_data = []
     speaker_data = defaultdict(list)
 
-    # Loop through each sentence and compare both models
+    # Loops through each sentence and compare both models
     for sentence in sentences:
         text = str(sentence)
         tb_polarity = sentence.sentiment.polarity
@@ -152,25 +146,25 @@ def main():
         print(f"     (pos={vader_scores['pos']:.2f}, neu={vader_scores['neu']:.2f}, neg={vader_scores['neg']:.2f})")
         print("-" * 60)
 
-        # Collect sentence-level results
+        # Collects all sentence-level results
         results_data.append({
             "sentence": text,
             "TextBlob_polarity": tb_polarity,
             "VADER_compound": vader_scores["compound"]
         })
 
-        # Attempt to extract speaker (e.g., "Speaker: ...")
+        # Attempt to extract the individual who's speaking (For instance: "Speaker: ...")
         match = re.match(r"([A-Za-z ]+):", text)
         if match:
             speaker = match.group(1).strip()
             speaker_data[speaker].append((tb_polarity, vader_scores["compound"]))
 
-    # --- Step 4: Store sentence-level results in a DataFrame ---
+    # Putting results for individual sentences into DataFrame 
     results_df = pd.DataFrame(results_data)
     print("\nSentence-level results stored in a DataFrame:\n")
     print(results_df.head())
 
-    # --- Step 5: Aggregate sentiment by speaker ---
+    # Aggregated sentiment by speaker
     print("\nAverage Sentiment by Speaker:\n")
     speaker_summary = []
     for speaker, values in speaker_data.items():
@@ -184,20 +178,21 @@ def main():
                 "VADER_avg": avg_vader
             })
 
-    # Build and plot speaker summary if any speakers found
+    # Build and plot speaker summary on a graph
     if speaker_summary:
         df_summary = pd.DataFrame(speaker_summary)
         plt.figure(figsize=(8, 5))
         bar_width = 0.35
 
-        # Set positions for bars
+        # Sets positions for the bars on bar chart
         x = range(len(df_summary))
         plt.bar([p - bar_width/2 for p in x], df_summary["TextBlob_avg"], 
                 width=bar_width, label="TextBlob", color="#4C72B0")
         plt.bar([p + bar_width/2 for p in x], df_summary["VADER_avg"], 
                 width=bar_width, label="VADER", color="#DD8452")
+        # TODO: I will adjust chart colors and styles later to be more visually appealing (probably green & red themed)
 
-        # Add labels and title
+        # Adds labels and title
         plt.xticks(x, df_summary["speaker"], rotation=20, ha="right")
         plt.title("Average Sentiment by Speaker", fontsize=14, pad=15)
         plt.xlabel("Speaker")
@@ -207,7 +202,7 @@ def main():
         plt.tight_layout()
         plt.show()
 
-        # --- Step 6: Export results to CSV files ---
+        # Results export to CSV files
     try:
         results_df.to_csv("data/sentence_results.csv", index=False)
         if speaker_summary:
@@ -218,7 +213,7 @@ def main():
     except Exception as e:
         print(f"Error saving CSV files: {e}")
 
-        # --- Step 7: Visualize sentiment trend across transcript ---
+        # Graph overview of sentiment (the trend across entirety of transcript)
     if not results_df.empty:
         plt.figure(figsize=(10, 5))
         plt.plot(results_df["TextBlob_polarity"], label="TextBlob", color="#4C72B0", marker="o")
@@ -232,7 +227,7 @@ def main():
         plt.tight_layout()
         plt.show()
 
-        # --- Step 8: Compare multiple transcripts (optional) ---
+        # Compares multiple transcripts if there are any
     folder_path = "transcripts"
     if os.path.exists(folder_path):
         multi_df = analyze_multiple_transcripts(folder_path)
@@ -251,13 +246,13 @@ def main():
             plt.ylabel("Average Sentiment")
             plt.tight_layout()
             plt.show()
-                # --- Step 10: Visualize sentiment vs stock movement ---
+                # Sentiment vs stock movement plot
         if "StockChange_%" in multi_df.columns:
             plt.figure(figsize=(8, 5))
             plt.scatter(multi_df["VADER_avg"], multi_df["StockChange_%"], color="#DD8452", label="VADER")
             plt.scatter(multi_df["TextBlob_avg"], multi_df["StockChange_%"], color="#4C72B0", label="TextBlob")
 
-            # Label each point with the transcript filename
+            # Labels each point with the the filename of individual transcript
             for i, row in multi_df.iterrows():
                 plt.text(row["VADER_avg"], row["StockChange_%"], row["file"], fontsize=8, ha="left")
 
@@ -270,7 +265,7 @@ def main():
             plt.show()
             
 
-        # --- Step 9: Compare sentiment to stock reaction ---
+        # Compare sentiment to stock reaction 
     call_date = datetime(2024, 7, 25)  # Example: Apple Q3 2024 earnings call date
     analyze_stock_reaction(ticker="AAPL", call_date=call_date)
     
