@@ -38,4 +38,21 @@ See `figures/` for example charts.
 This repo is under active development.  
 What is coming soon: more advanced sentiment models for better accuracy, a prediction model, new webapp.
 
+## Example Results 
+
+Below are example outputs generated from real Apple earnings call transcripts (Q1-Q3 2025).
+
+### Average Sentiment by Speaker
+![Speaker Sentiment Chart](figures/speaker_avg.png)
+
+### Sentiment Trend Across Transcript
+![Sentiment Trend](figures/sentiment_trend.png)
+
+### Comparison Across Multiple Transcripts
+![Multiple Transcript Comparison](figures/multi_transcript_comparison.png)
+
+### Sentiment vs. Stock Reaction
+![Sentiment vs Stock Reaction](figures/sentiment_vs_stock.png)
+
+
 Last updated: October 2025 
