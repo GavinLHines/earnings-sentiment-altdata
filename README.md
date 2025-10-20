@@ -44,15 +44,26 @@ Below are example outputs generated from real Apple earnings call transcripts (Q
 
 ### Average Sentiment by Speaker
 ![Speaker Sentiment Chart](figures/speaker_avg.png)
+*Figure 1: The average sentiment tone for each speaker during Apple's earning call.*
 
 ### Sentiment Trend Across Transcript
 ![Sentiment Trend](figures/sentiment_trend.png)
+*Figure 2: Sentence-level sentiment trend showing how tone changes throughout the call.*
 
 ### Comparison Across Multiple Transcripts
 ![Multiple Transcript Comparison](figures/multi_transcript_comparison.png)
+*Figure 3: Comparison of average sentiment between multiple Apple earnings calls (Q1-Q3 2025.)*
 
 ### Sentiment vs. Stock Reaction
 ![Sentiment vs Stock Reaction](figures/sentiment_vs_stock.png)
+*Figure 4: Relationship between post-call stock price movement and call sentiment.*
+
+## Results Summary
+
+The analysis found that Apple’s overall executive tone during earnings calls remains consistently positive, especially from Tim Cook and Luca Maestri.  
+VADER tends to show slightly higher optimism than TextBlob, reflecting its sensitivity to stronger emotional words.  
+Quarter-over-quarter comparisons suggest sentiment stays high when Services revenue grows and dips slightly during supply chain commentary.  
+Stock reactions appear loosely correlated — more positive tone often aligns with small short-term gains in the days following the call.
 
 
 Last updated: October 2025 
