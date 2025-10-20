@@ -1,6 +1,6 @@
 # EARNINGS CALL SENTIMENT ANALYZER
 
-Quantifies the 'tone' in the speech of earnings call transcripts and links it to stock movements.
+Evaluates the 'tone' in earnings call transcripts using natural language processing, compares sentiment between speakers, and links stock price movements to executive communication.
 
 ## WHAT IT DOES
 
@@ -33,5 +33,5 @@ See `figures/` for example charts.
 ## NOTES
 
 This repo is under active development.  
-What's coming soon: more advanced sentiment models for better accuracy, a prediction model, new webapp.
+What is coming soon: more advanced sentiment models for better accuracy, a prediction model, new webapp.
 
