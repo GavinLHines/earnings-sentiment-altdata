@@ -43,7 +43,7 @@ What is coming soon: more advanced sentiment models for better accuracy, a predi
 Below are example outputs generated from real Apple earnings call transcripts (Q1-Q3 2025).
 
 ### Average Sentiment by Speaker
-![Speaker Sentiment Chart](figures/speaker_avg.png)
+![Speaker Sentiment Chart](figures/Avg_Sentiment_Speaker.png)
 *Figure 1: The average sentiment tone for each speaker during Apple's earning call.*
 
 ### Sentiment Trend Across Transcript
