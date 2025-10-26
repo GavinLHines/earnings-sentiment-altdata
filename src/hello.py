@@ -90,16 +90,22 @@ def analyze_stock_reaction(ticker="AAPL", call_date=None, days_after=5):
 
 # Function to clean the transcript of superfluous elements
 def clean_transcript(text):
-    #Removes unwanted elements from the transcript (Applause, blank lines, etc.)
-    
+    # Remove bracketed/parenthetical stage directions
     text = re.sub(r'\(Applause\)', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'\[.*?\]', '', text)  # remove bracketed text like [Laughter]
-    text = re.sub(r'\s+', ' ', text)  # collapse multiple spaces
+    text = re.sub(r'\[.*?\]', '', text)
+
+    # Collapse spaces and tabs, but KEEP line breaks
+    text = re.sub(r'[ \t]+', ' ', text)
+
+    # Reduce huge blank gaps but keep paragraph breaks
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
     return text.strip()
+
   # I might add more cleaning steps later for things like timestamps
 
 
-# retrieve transcript from a text file
+# retrieves transcript from a text file
 def load_transcript(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -110,16 +116,72 @@ def load_transcript(file_path):
         print(f"Error: File not found at {file_path}")
         return None
 
+# speaker detection works across most transcripts, avoids false hits
+def detect_speaker(line: str, last: str) -> str:
+    line = line.strip()
+
+    # Case A: "Tim Cook: Thank you..." or "Operator – Good afternoon..."
+    m = re.match(
+        r"^((?:[A-Z][\w'’\-\.]+(?:\s+[A-Z][\w'’\-\.]+){0,3})|"
+        r"Operator|Analyst|Moderator|Host|Participant|Unidentified Analyst)"
+        r"\s*[:\-–—]\s+",         # NOTE: punctuation is REQUIRED here
+        line
+    )
+    if m:
+        return m.group(1).title()
+
+    # Case B: standalone label line: "Tim Cook" / "Operator" 
+    m2 = re.match(
+        r"^((?:[A-Z][\w'’\-\.]+(?:\s+[A-Z][\w'’\-\.]+){0,3})|"
+        r"Operator|Analyst|Moderator|Host|Participant|Unidentified Analyst)$",
+        line
+    )
+    if m2:
+        return m2.group(1).title()
+
+    # No new speaker on this line = keep previous
+    return last
+
+
+from collections import defaultdict
+
+def segment_by_speaker(cleaned_text: str) -> dict:
+    current = "Unknown"
+    buckets = defaultdict(list)
+
+    for raw_line in cleaned_text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        new_speaker = detect_speaker(line, current)
+
+        # If line is only the label itself, switch speaker and skip adding this line as content
+        if new_speaker != current:
+            current = new_speaker
+            if re.fullmatch(rf'{re.escape(current)}', line, flags=re.IGNORECASE) or \
+               re.fullmatch(rf'{re.escape(current)}\s*[:\-–—]?', line, flags=re.IGNORECASE):
+                continue
+
+        # Otherwise, this is content spoken by `current`
+        buckets[current].append(line)
+
+    # Join each speaker’s lines into one block of text
+    return {spk: ' '.join(lines) for spk, lines in buckets.items()}
+
 
 # Main logic for the sentiment analysis 
 def main():
     # Load and clean transcript
-    file_path = "data/sample_transcript"
+    file_path = "transcripts/apple_q3_2025.txt"
     transcript = load_transcript(file_path)
     if not transcript:
         return
 
     cleaned_text = clean_transcript(transcript)
+    # Build speaker blocks before sentence tokenization
+    speaker_blocks = segment_by_speaker(cleaned_text)
+
 
     # Split into single sentences
     blob = TextBlob(cleaned_text)
@@ -153,47 +215,52 @@ def main():
             "VADER_compound": vader_scores["compound"]
         })
 
-        # Attempt to extract the individual who's speaking (For instance: "Speaker: ...")
-        match = re.match(r"([A-Za-z ]+):", text)
-        if match:
-            speaker = match.group(1).strip()
-            speaker_data[speaker].append((tb_polarity, vader_scores["compound"]))
+        # Initialize a default speaker if none yet
+        if 'last_speaker' not in locals():
+            last_speaker = "Unknown"
+
+        # Update current speaker if a name/role appears at the start of the line
+        last_speaker = detect_speaker(text, last_speaker)
+
+        # Record this sentence’s sentiment under that speaker
+        speaker_data[last_speaker].append((tb_polarity, vader_scores["compound"]))
+
+
 
     # Putting results for individual sentences into DataFrame 
     results_df = pd.DataFrame(results_data)
     print("\nSentence-level results stored in a DataFrame:\n")
     print(results_df.head())
 
-    # Aggregated sentiment by speaker
-    print("\nAverage Sentiment by Speaker:\n")
+    # Speaker-level averages 
     speaker_summary = []
-    for speaker, values in speaker_data.items():
-        if values:
-            avg_tb = sum(v[0] for v in values) / len(values)
-            avg_vader = sum(v[1] for v in values) / len(values)
-            print(f"{speaker}: TextBlob ={avg_tb:.2f}, VADER ={avg_vader:.2f}")
-            speaker_summary.append({
-                "speaker": speaker,
-                "TextBlob_avg": avg_tb,
-                "VADER_avg": avg_vader
-            })
+    vd = SentimentIntensityAnalyzer()
 
-    # Build and plot speaker summary on a graph
+    for speaker, block in speaker_blocks.items():
+        if speaker.lower() == "unknown":
+            continue
+        b = TextBlob(block)
+        if len(b.sentences) == 0:
+            continue
+        tb_avg = sum(s.sentiment.polarity for s in b.sentences) / len(b.sentences)
+        vd_avg = sum(vd.polarity_scores(str(s))['compound'] for s in b.sentences) / len(b.sentences)
+        speaker_summary.append({"speaker": speaker, "TextBlob_avg": tb_avg, "VADER_avg": vd_avg})
+
+    print("Speakers detected:", [row["speaker"] for row in speaker_summary])
+
+    # Plot (only if speakers were found)
     if speaker_summary:
-        df_summary = pd.DataFrame(speaker_summary)
-        plt.figure(figsize=(8, 5))
+        df_summary = pd.DataFrame(speaker_summary).groupby("speaker", as_index=False).mean()
+        plt.figure(figsize=(9, 5))
         bar_width = 0.35
-
-        # Sets positions for the bars on bar chart
         x = range(len(df_summary))
-        plt.bar([p - bar_width/2 for p in x], df_summary["TextBlob_avg"], 
-                width=bar_width, label="TextBlob", color="#4C72B0")
-        plt.bar([p + bar_width/2 for p in x], df_summary["VADER_avg"], 
-                width=bar_width, label="VADER", color="#DD8452")
-        # TODO: I will adjust chart colors and styles later to be more visually appealing (probably green & red themed)
 
-        # Adds labels and title
-        plt.xticks(x, df_summary["speaker"], rotation=20, ha="right")
+        plt.bar([p - bar_width/2 for p in x], df_summary["TextBlob_avg"],
+            width=bar_width, label="TextBlob", color="#4C72B0")
+        plt.bar([p + bar_width/2 for p in x], df_summary["VADER_avg"],
+            width=bar_width, label="VADER", color="#DD8452")
+
+        plt.xticks(x, df_summary["speaker"], rotation=25, ha="right", fontsize=9)
         plt.title("Average Sentiment by Speaker", fontsize=14, pad=15)
         plt.xlabel("Speaker")
         plt.ylabel("Sentiment Score")
@@ -201,6 +268,9 @@ def main():
         plt.grid(axis="y", linestyle="--", alpha=0.6)
         plt.tight_layout()
         plt.show()
+    else:
+        print("No speaker labels detected. Check transcript format or relax detection.")
+
 
         # Results export to CSV files
     try:
@@ -216,6 +286,9 @@ def main():
         # Graph overview of sentiment (the trend across entirety of transcript)
     if not results_df.empty:
         plt.figure(figsize=(10, 5))
+
+        x = range(len(results_df))
+        
         plt.plot(results_df["TextBlob_polarity"], label="TextBlob", color="#4C72B0", marker="o")
         plt.plot(results_df["VADER_compound"], label="VADER", color="#DD8452", marker="o")
 
